@@ -8,22 +8,7 @@ from gtts import gTTS
 import base64
 from io import BytesIO
 
-
-api_keys = [
-    st.secrets.get("AIzaSyC7NyVq0NmJg1xERJ_YSvo8nUUPwAgNBew"),
-    st.secrets.get("AIzaSyBE-d38XLKmYYl3jIyYqJj2-2uohALSJzA"),
-    st.secrets.get("AIzaSyBpVfX9MC8TKVmwiaF9qWX_6j6thf0VlL4")
-]
-
-# تصفية القائمة من أي مفتاح فارغ
-valid_keys = [k for k in api_keys if k]
-
-if valid_keys:
-    # اختيار مفتاح عشوائي عند كل تشغيل للتطبيق
-    selected_key = random.choice(valid_keys)
-    genai.configure(api_key=selected_key)
-else:
-    st.error("⚠️ لم يتم العثور على API Keys في الإعدادات!")
+genai.configure(api_key="AIzaSyAk5vJhLzF98iU3bMroWhxRVSitTpV1DcE")
 
 def get_direction(text):
     if re.search(r'[\u0600-\u06FF]', str(text)):
