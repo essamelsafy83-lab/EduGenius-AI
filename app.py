@@ -8,7 +8,8 @@ from gtts import gTTS
 import base64
 from io import BytesIO
 
-genai.configure(api_key="AIzaSyAk5vJhLzF98iU3bMroWhxRVSitTpV1DcE")
+# إعداد مفتاح API
+genai.configure(api_key="AIzaSyCsuDVeWQGSGD4aMbejXjEc_9uuXZ4aq4E")
 
 def get_direction(text):
     if re.search(r'[\u0600-\u06FF]', str(text)):
@@ -29,7 +30,7 @@ def text_to_speech_html(text, lang='en'):
             var audio = document.getElementById('audio-player');
             var card = audio.previousElementSibling;
             audio.onplay = function() {{
-                card.style.backgroundColor = '#fff9c4'; // اللون الأصفر عند التشغيل
+                card.style.backgroundColor = '#fff9c4';
             }};
             audio.onpause = function() {{
                 card.style.backgroundColor = 'white';
@@ -56,6 +57,7 @@ model = genai.GenerativeModel(selected_model)
 
 st.set_page_config(page_title="EduGenius AI", page_icon="🎓", layout="wide")
 
+# التنسيقات CSS
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&family=Cairo:wght@400;700&display=swap');
@@ -150,7 +152,8 @@ if file:
     text = "".join([p.extract_text() for p in pdf.pages if p.extract_text()])
     st.success("Your PDF has been successfully uploaded!")
 
-    t1, t2, t3, t4, t5 = st.tabs(["📝 Summary", "📊 Table", "🎧 Podcast Script", "🧠 Quiz", "💬 Ask Gemini"])
+    # تحديث التبويبات لتشمل AI Video Tutor
+    t1, t2, t3, t4, t5, t6 = st.tabs(["📝 Summary", "📊 Table", "🎧 Podcast Script", "🧠 AI Assessment", "💬 Ask Gemini", "🎥 AI Video Tutor"])
 
     with t1:
         st.markdown("<br>", unsafe_allow_html=True)
@@ -191,26 +194,48 @@ if file:
 
     with t4:
         st.markdown("<br>", unsafe_allow_html=True)
-        if st.button("Start Quiz"):
-            with st.spinner("Designing..."):
+        st.subheader("🧠 Mixed Exam & AI Essay Grader")
+        if st.button("Generate 20 Questions (10 MCQ + 10 Essay)"):
+            with st.spinner("Designing Assessment..."):
                 try:
                     st.session_state.qid = random.randint(1, 9999)
-                    prompt = f"Act as an expert examiner. Create 10 high-level Multiple Choice Questions (MCQs) that test critical thinking and inference, not just memorization. Format as JSON ONLY: [{{'question': '...', 'options': ['...', '...'], 'answer': '...'}}]. STRICTLY use the SAME language as the source text: \n\n {text[:10000]}"
+                    prompt = f"""Act as an expert examiner. Create a comprehensive test. 
+                    Format as JSON ONLY: 
+                    {{
+                        "mcqs": [{{ "question": "...", "options": ["...", "..."], "answer": "..." }}], 
+                        "essays": [{{ "question": "...", "model_answer": "..." }}]
+                    }}
+                    Create exactly 10 mcqs and 10 essay questions. 
+                    STRICTLY use the SAME language as the source text: \n\n {text[:10000]}"""
+                    
                     res = model.generate_content(prompt)
                     raw = res.text.replace('```json', '').replace('```', '').strip()
-                    st.session_state.quiz = json.loads(raw)
+                    st.session_state.full_assessment = json.loads(raw)
                 except:
-                    st.warning("⚠️ Daily limit reached.")
+                    st.warning("⚠️ Generation Error.")
 
-        if 'quiz' in st.session_state:
-            for i, q in enumerate(st.session_state.quiz):
+        if 'full_assessment' in st.session_state:
+            st.markdown("### 📝 Part 1: Multiple Choice (10 Qs)")
+            for i, q in enumerate(st.session_state.full_assessment['mcqs']):
                 dir = get_direction(q['question'])
                 st.markdown(f"<div class='explanation-card' style='direction: {dir}; text-align: {'right' if dir=='rtl' else 'left'};'>", unsafe_allow_html=True)
                 st.markdown(f"**Q{i+1}: {q['question']}**")
-                choice = st.radio("Select Option:", q['options'], key=f"q_{i}_{st.session_state.qid}", index=None)
-                if st.button(f"Verify Q{i+1}", key=f"v_{i}"):
+                choice = st.radio("Select Option:", q['options'], key=f"mcq_{i}_{st.session_state.qid}", index=None)
+                if st.button(f"Verify Q{i+1}", key=f"v_mcq_{i}"):
                     if choice == q['answer']: st.success("Correct")
                     else: st.error(f"Answer: {q['answer']}")
+                st.markdown("</div>", unsafe_allow_html=True)
+
+            st.markdown("### ✍️ Part 2: AI Essay Grader (10 Qs)")
+            for i, q in enumerate(st.session_state.full_assessment['essays']):
+                dir = get_direction(q['question'])
+                st.markdown(f"<div class='explanation-card' style='direction: {dir}; text-align: {'right' if dir=='rtl' else 'left'};'>", unsafe_allow_html=True)
+                st.markdown(f"**Q{i+11}: {q['question']}**")
+                user_ans = st.text_area("Write your answer here:", key=f"ans_{i}_{st.session_state.qid}")
+                if st.button(f"Grade Essay {i+11}", key=f"grade_{i}"):
+                    with st.spinner("AI is grading..."):
+                        grader_res = model.generate_content(f"Grade this student answer based on the model answer. Give a score out of 10 and constructive feedback. Language: Same as input. \nModel Answer: {q['model_answer']}\nStudent Answer: {user_ans}")
+                        st.info(grader_res.text)
                 st.markdown("</div>", unsafe_allow_html=True)
 
     with t5:
@@ -228,3 +253,19 @@ if file:
                         st.markdown(text_to_speech_html(res.text, lang=lang), unsafe_allow_html=True)
                     except:
                         st.error("Connection error.")
+
+    with t6:
+        st.markdown("<br>", unsafe_allow_html=True)
+        st.header("🎥 AI Video Tutor")
+        video_topic = st.text_input("Topic for video explanation (Optional):")
+        if st.button("Generate Video Lesson"):
+            with st.spinner("Creating AI Video Content..."):
+                try:
+                    # منطق توليد سكريبت الفيديو والشرح المرئي
+                    vid_script = model.generate_content(f"Create a structured educational video lesson script about {video_topic if video_topic else 'the document content'}. Focus on visual cues and simple explanation. Context: {text[:5000]}")
+                    dir = get_direction(vid_script.text)
+                    
+                    st.video("https://www.w3schools.com/html/mov_bbb.mp4") # رابط فيديو افتراضي للتوضيح
+                    st.markdown(f'<div class="explanation-card" style="direction: {dir}; text-align: {"right" if dir=="rtl" else "left"};">{vid_script.text}</div>', unsafe_allow_html=True)
+                except:
+                    st.error("Error generating video lesson.")
