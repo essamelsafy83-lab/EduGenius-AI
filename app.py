@@ -3,7 +3,7 @@ import google.generativeai as genai
 import re
 
 
-genai.configure(api_key="AIzaSyDqqARJZO7TPLCq7PRDx_HOm_5Rf5C_jI0")
+genai.configure(api_key="AIzaSyCVmxhL7wE3hC7xvGgbhOBjlrbpm9rOzoM")
 
 def get_working_model():
     
