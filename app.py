@@ -1,63 +1,67 @@
 import streamlit as st
-from PyPDF2 import PdfReader
 import google.generativeai as genai
-import json
-import random
 import re
-from gtts import gTTS
-import base64
-from io import BytesIO
 
-# إعداد مفتاح API
-genai.configure(api_key="AIzaSyCsuDVeWQGSGD4aMbejXjEc_9uuXZ4aq4E")
 
-def get_direction(text):
-    if re.search(r'[\u0600-\u06FF]', str(text)):
-        return "rtl"
-    return "ltr"
+genai.configure(api_key="AIzaSyDqqARJZO7TPLCq7PRDx_HOm_5Rf5C_jI0")
 
-def text_to_speech_html(text, lang='en'):
-    tts = gTTS(text=text, lang=lang)
-    fp = BytesIO()
-    tts.write_to_fp(fp)
-    b64 = base64.b64encode(fp.getvalue()).decode()
+def get_working_model():
     
-    audio_html = f"""
-        <audio id="audio-player" controls style="width: 100%; margin-top: 10px;">
-            <source src="data:audio/mp3;base64,{b64}" type="audio/mp3">
-        </audio>
-        <script>
-            var audio = document.getElementById('audio-player');
-            var card = audio.previousElementSibling;
-            audio.onplay = function() {{
-                card.style.backgroundColor = '#fff9c4';
-            }};
-            audio.onpause = function() {{
-                card.style.backgroundColor = 'white';
-            }};
-            audio.onended = function() {{
-                card.style.backgroundColor = 'white';
-            }};
-        </script>
-    """
-    return audio_html
-
-def resolve_model():
     try:
-        available = [m.name for m in genai.list_models() if 'generateContent' in m.supported_generation_methods]
-        for preferred in ['models/gemini-1.5-flash', 'models/gemini-1.5-flash-latest', 'models/gemini-pro']:
-            if preferred in available:
-                return preferred
-        return available[0]
+        models = [m.name for m in genai.list_models() if 'generateContent' in m.supported_generation_methods]
+        for preferred in ['models/gemini-1.5-flash', 'models/gemini-pro', 'models/gemini-1.0-pro']:
+            if preferred in models: return genai.GenerativeModel(preferred)
+        return genai.GenerativeModel(models[0])
     except:
-        return 'models/gemini-1.5-flash'
+        return genai.GenerativeModel('gemini-pro')
 
-selected_model = resolve_model()
-model = genai.GenerativeModel(selected_model)
+model = get_working_model()
 
-st.set_page_config(page_title="EduGenius AI", page_icon="🎓", layout="wide")
 
-# التنسيقات CSS
+CORRECT_CODE = "7893"
+LESSON_SUMMARY = """يعد الشهيد إبراهيم الرفاعي نموذجًا بارزًا وبطلًا أسطوريًا في تاريخ القوات الخاصة المصرية، اشتهر بتضحياته العظيمة ودوره في حماية كرامة الوطن وهويته.
+
+وُلِد الرفاعي عام 1931م في حي العباسية بالقاهرة، وتخرج في الكلية الحربية عام 1954م، ثم حصل على ماجستير العلوم العسكرية عام 1959م، وبرع في فرقتي الصاعقة والمظلات حيث كان الأول على دفعته.
+
+
+
+
+
+تميز بشجاعته الفائقة وإقدامه النادر، فكان يقود رجاله بنفسه في الصفوف الأمامية، متصفًا بالإخلاص والتضحية، وامتلك كفاءة وجرأة مذهلة، كما كان إنسانيًا متواضعًا، يعتني بأسر شهدائه وينخرط في حياتهم.
+
+
+
+
+
+أسس مجموعة العمليات الخاصة المعروفة بـ "المجموعة 39 قتال" أو "الأشباح" خلال حرب الاستنزاف، والتي نفذت عشرات العمليات النوعية خلف خطوط العدو بقدرة فائقة على التخفي والعودة دون رصد.
+
+
+
+
+
+تضمنت بطولاته في حرب 1956 عملية تدمير الدبابات الإنجليزية ببورسعيد، وفي حرب الاستنزاف قصف مدينة بيسان ونسف قطار حربي ومخازن للذخيرة.
+
+
+
+
+
+وفي حرب أكتوبر 1973، قاد عمليات حيوية منها تدمير آبار البترول في بلاعيم في 6 أكتوبر، والإغارة على مطار الطور وتدمير منشآته في 7 أكتوبر، واختراق مواقع العدو غرب القناة وصولًا لنفيشة ومنع تقدمه نحو الإسماعيلية في 18 أكتوبر.
+
+
+
+
+
+استشهد في 19 أكتوبر 1973، خلال قتال ضار غرب القناة بالإسماعيلية، متأثرًا بشظايا قذيفة مدفعية معادية، حيث لفظ أنفاسه الأخيرة صائمًا بعد أن طلب من رجاله مواصلة القتال من أجل الوطن.
+
+
+
+
+
+يُعد استشهاده تذكيرًا بأن الحفاظ على الهوية المصرية إرث عظيم، وأن سيرة الأبطال نبراس يحتذى به، مؤكدًا أن المصري الأصيل لا يفرط في وطنه ولا يتخلى عن هويته، بل يحيا شجاعًا ويموت عزيزًا، مجسدًا قيم الإيثار، الإخلاص، حب الوطن، والتضحية."""
+
+
+st.set_page_config(page_title="EduGenius AI", layout="wide")
+
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&family=Cairo:wght@400;700&display=swap');
@@ -68,204 +72,333 @@ st.markdown("""
         animation: gradient 15s ease infinite;
         font-family: 'Plus Jakarta Sans', 'Cairo', sans-serif;
     }
-    @keyframes gradient {
-        0% { background-position: 0% 50%; }
-        50% { background-position: 100% 50%; }
-        100% { background-position: 0% 50%; }
-    }
+    @keyframes gradient { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
 
+    /* Full Width Tabs Styling */
     .stTabs [data-baseweb="tab-list"] {
-        width: 100% !important;
-        display: flex !important;
-        justify-content: space-around !important;
+        width: 100%;
+        display: flex;
         background: rgba(255, 255, 255, 0.7);
-        backdrop-filter: blur(10px);
-        padding: 10px;
-        border-radius: 20px;
-        border: 1px solid rgba(255, 255, 255, 0.3);
-        margin-bottom: 30px;
+        border-radius: 15px;
+        padding: 5px;
     }
     .stTabs [data-baseweb="tab"] {
-        flex: 1 !important;
-        transition: 0.4s;
-        border-radius: 12px;
+        flex: 1;
+        text-align: center;
         font-weight: 800;
-        color: #475569;
-    }
-    .stTabs [aria-selected="true"] {
-        background: #2563eb !important;
-        box-shadow: 0 10px 15px -3px rgba(37, 99, 235, 0.3);
-        color: white !important;
+        font-size: 16px;
     }
 
     .explanation-card {
         background: white;
-        padding: 35px;
-        border-radius: 24px;
-        box-shadow: 0 4px 20px rgba(0,0,0,0.03);
-        border-left: 8px solid #2563eb;
-        margin-bottom: 25px;
-        line-height: 2.2;
-        font-size: 18px;
-        color: #1e293b;
-        white-space: pre-wrap;
-        transition: background-color 0.3s ease;
-    }
-
-    .stButton>button {
-        background: #1e293b;
-        color: white;
-        border-radius: 15px;
-        padding: 20px;
-        font-weight: 700;
-        border: none;
-        width: 100%;
-        transition: 0.3s all;
-    }
-    .stButton>button:hover {
-        transform: translateY(-2px);
-        background: #2563eb;
-        box-shadow: 0 10px 25px rgba(37, 99, 235, 0.2);
-    }
-
-    .stMarkdown table {
-        width: 100% !important;
-        border-radius: 15px;
-        overflow: hidden;
-        border: none;
+        padding: 30px;
+        border-radius: 20px;
         box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        border-left: 8px solid #2563eb;
+        margin-bottom: 20px;
+        line-height: 2;
+        color: #1e293b;
     }
-    th { background-color: #0f172a !important; color: white !important; padding: 18px !important; }
-    td { background-color: white !important; padding: 15px !important; border-bottom: 1px solid #f1f5f9 !important; }
+    .rtl-text { direction: rtl; text-align: right; }
     
-    .rtl-container { direction: rtl !important; text-align: right !important; }
+    table { width: 100% !important; direction: rtl; border-collapse: collapse; }
+    th { background-color: #1e293b !important; color: white !important; padding: 15px !important; text-align: right !important; }
+    td { background-color: white !important; padding: 12px !important; border: 1px solid #eee !important; text-align: right !important; }
     </style>
     """, unsafe_allow_html=True)
 
-st.title("🎓 EduGenius AI")
-st.caption("🚀 The secret to getting ahead is getting started. Believe in yourself!")
 
-file = st.file_uploader("Upload PDF", type="pdf")
+if "authenticated" not in st.session_state:
+    st.session_state.authenticated = False
 
-if file:
-    pdf = PdfReader(file)
-    text = "".join([p.extract_text() for p in pdf.pages if p.extract_text()])
-    st.success("Your PDF has been successfully uploaded!")
+if not st.session_state.authenticated:
+    _, col, _ = st.columns([1,2,1])
+    with col:
+        st.title("🔒 Student Portal")
+        pin = st.text_input("Enter Access Code:", type="password")
+        if st.button("Unlock Lesson"):
+            if pin == CORRECT_CODE:
+                st.session_state.authenticated = True
+                st.rerun()
+            else: st.error("Incorrect Code")
+    st.stop()
 
-    # تحديث التبويبات لتشمل AI Video Tutor
-    t1, t2, t3, t4, t5, t6 = st.tabs(["📝 Summary", "📊 Table", "🎧 Podcast Script", "🧠 AI Assessment", "💬 Ask Gemini", "🎥 AI Video Tutor"])
 
-    with t1:
-        st.markdown("<br>", unsafe_allow_html=True)
-        if st.button("Generate Summary"):
-            with st.spinner("Synthesizing..."):
-                try:
-                    res = model.generate_content(f"Provide a deep academic summary in the same language as the text. Break down the content into clear, separate points. Start each new idea on a new line. No # or *: \n\n {text[:15000]}")
-                    dir = get_direction(res.text)
-                    st.markdown(f'<div class="explanation-card" style="direction: {dir}; text-align: {"right" if dir=="rtl" else "left"};">{res.text}</div>', unsafe_allow_html=True)
-                except Exception:
-                    st.warning("⚠️ Daily limit reached.")
+st.title("🎓 Ibrahim Al-Rifa'i Lesson")
 
-    with t2:
-        st.markdown("<br>", unsafe_allow_html=True)
-        if st.button("Extract Table"):
-            with st.spinner("Structuring..."):
-                try:
-                    res = model.generate_content(f"Act as a data architect. Extract all major concepts into a Markdown table with three columns: (Concept | Detailed Explanation | Practical Application). Ensure the information is dense and accurate. STRICTLY use the SAME language as the source text. Do not translate headers or content: \n\n {text[:15000]}")
-                    dir = get_direction(res.text)
-                    st.markdown(f'<div class="{"rtl-container" if dir=="rtl" else ""}">', unsafe_allow_html=True)
-                    st.markdown(res.text)
-                    st.markdown('</div>', unsafe_allow_html=True)
-                except:
-                    st.warning("⚠️ Daily limit reached.")
+t1, t2, t3, t4, t5 = st.tabs(["📝 SUMMARY", "📊 TABLES", "🎧 PODCAST", "🧠 EXAM", "💬 CHAT AI"])
 
-    with t3:
-        st.markdown("<br>", unsafe_allow_html=True)
-        if st.button("Generate Podcast Script"):
-            with st.spinner("Writing Script..."):
-                try:
-                    res = model.generate_content(f"Convert this text into an engaging podcast script between two experts discussing the main ideas. Use a conversational, easy-to-follow tone. STRICTLY use the SAME language as the source text: \n\n {text[:10000]}")
-                    dir = get_direction(res.text)
-                    st.markdown(f'<div class="explanation-card" style="direction: {dir}; text-align: {"right" if dir=="rtl" else "left"}; background: white;">{res.text}</div>', unsafe_allow_html=True)
-                    lang = 'ar' if dir == 'rtl' else 'en'
-                    st.markdown(text_to_speech_html(res.text, lang=lang), unsafe_allow_html=True)
-                except:
-                    st.warning("⚠️ Error generating script.")
+with t1:
+    st.markdown(f'<div class="explanation-card rtl-text">{LESSON_SUMMARY}</div>', unsafe_allow_html=True)
 
-    with t4:
-        st.markdown("<br>", unsafe_allow_html=True)
-        st.subheader("🧠 Mixed Exam & AI Essay Grader")
-        if st.button("Generate 20 Questions (10 MCQ + 10 Essay)"):
-            with st.spinner("Designing Assessment..."):
-                try:
-                    st.session_state.qid = random.randint(1, 9999)
-                    prompt = f"""Act as an expert examiner. Create a comprehensive test. 
-                    Format as JSON ONLY: 
-                    {{
-                        "mcqs": [{{ "question": "...", "options": ["...", "..."], "answer": "..." }}], 
-                        "essays": [{{ "question": "...", "model_answer": "..." }}]
-                    }}
-                    Create exactly 10 mcqs and 10 essay questions. 
-                    STRICTLY use the SAME language as the source text: \n\n {text[:10000]}"""
+with t2:
+    st.markdown("""
+    <div class="explanation-card">
+    <h3 class="rtl-text">1. تعبيرات ودلالات:</h3>
+    <table>
+        <tr><th>التعبير</th><th>الدلالة</th></tr>
+        <tr><td>إن من يواجهون الموت معاً يجب أن يعيشوا حياتهم معاً</td><td>قوة الرابطة الإنسانية الناتجة عن المواقف المصيرية المشتركة</td></tr>
+        <tr><td>المصريون لا يلينون أمام التحديات</td><td>الإصرار والعزيمة وقوة الإرادة</td></tr>
+        <tr><td>كانت تلك العمليات تثير الرعب في قلوب الإسرائيليين</td><td>قوة العمليات العسكرية المصرية وشدة تأثيرها في نفوس العدو</td></tr>
+    </table>
+    <br>
+    <h3 class="rtl-text">2. قيم ومبادئ نتعلمها:</h3>
+    <table>
+        <tr><th>القيمة</th><th>التطبيق من حياة البطل</th></tr>
+        <tr><td>الإيثار والفداء</td><td>يقود رجاله بنفسه ويضرب المثل في التضحية والإخلاص</td></tr>
+        <tr><td>الإيمان بدور العلم</td><td>حصل على ماجستير العلوم العسكرية عام 1959م</td></tr>
+        <tr><td>الإنسانية والتواضع</td><td>أحب الرفاعي رجاله ووضع نفسه في خدمتهم</td></tr>
+        <tr><td>الوفاء والعطاء</td><td>تكفل بأسر من استشهد منهم وكان ينخرط معهم في مناسباتهم</td></tr>
+        <tr><td>حب الوطن</td><td>طلب من رجاله الاستمرار في المعركة وهو يلفظ أنفاسه</td></tr>
+    </table>
+    </div>
+    """, unsafe_allow_html=True)
+
+with t3:
+    st.markdown(f'''
+    <div class="explanation-card rtl-text" style="white-space: pre-wrap;">
+        <h2 style="text-align: center;">🎧 Podcast Script:</h2>
+        <hr>
+        المذيع (الخبير 1): أهلاً بكم مستمعينا الكرام في حلقة جديدة من بودكاست "دروب العزة"، حيث نتعمق في سِيَر الأبطال الذين صاغوا تاريخ أمتنا. اليوم، يسعدنا أن نناقش موضوعاً بالغ الأهمية من الدرس الثاني. نص قراءة. البطل الإنسان الشهيد .. إبراهيم الرفاعي. معي اليوم زميلي الخبير الأستاذ...
+
+
+
+
+
+الخبير 2: أهلاً بك زميلي العزيز، وبكل المستمعين الكرام. يشرفني أن أكون معكم في هذا النقاش حول قامة وطنية بحجم إبراهيم الرفاعي.
+
+
+
+
+
+الخبير 1: بالفعل. هذا الدرس يعد فرصة رائعة لنا لنتعرف على سيرة البطل إبراهيم الرفاعي ومكانته الوطنية، وقيماً ومبادئ، ومفاهيم أدبية، والفكرة الرئيسة، والفكر الفرعية المتعلقة بهذا البطل العظيم. وقبل أن نبدأ، دعنا نفكر ونتوقع، كما يشير النص: اضرب أمثلة لبعض الشهداء الذين قدموا أرواحهم فداء لوطنهم وحماية لهويتهم. وهذا يقودنا للحديث عن قيم عظيمة مثل: الإيثار، والإيمان بدور العلم في الإنسانية والأخوة، والوفاء والعطاء، وحب الوطن، والتحلي بالوطنية الصادقة. والفداء، وبناء الإنسان الناجح، والتواضع، وتقديم المساعدة، والتضحية من أجله، والاعتزاز بالهوية.
+
+
+
+
+
+الخبير 2: نعم، وهي قيم ومبادئ متكاملة تجسدت في سيرة شهيدنا اليوم. وكما يمهد لنا المقال من الصفحة 2: يعرض الدرس نموذجاً مشرفاً لأحد أبطال الصاعقة المصرية (الشهيد إبراهيم الرفاعي)، ضارباً به المثل في التضحية والفداء، وحماية كرامة الوطن، والحفاظ على هويته. فهو بحق أسطورة الصاعقة المصرية، من أعظم قادة القوات الخاصة المصرية في القرن العشرين.
+
+
+
+
+
+الخبير 1: وهو ما يدفعنا لسؤال: كيف كانت نشأة (إبراهيم الرفاعي)؟ النص يخبرنا أنه: وُلِد في عام 1931م في حي العباسية وفي أُسرة ترجع جُذورها إلى قرية الخاللة، إحدى قرى بلقاس بمحافظة الدقهلية. هذا يعطينا لمحة عن أصوله.
+
+
+
+
+
+الخبير 2: وبالتأكيد، لمشواره التعليمي والمهني دور كبير في تشكيل شخصيته. فكما جاء في تحليل النص بـ الصفحة 4: تخرج في الكلية الحربية عام 1954م. ثم التحق بسلاح المشاة. حصل على ماجستير العلوم العسكرية عام 1959م، كما حصل على فرقتي الصاعقة والمظلات، وكان ترتيبه الأول؛ ليبدأ رحلة مجد ستبقى حاضرة في ذاكرة الوطن. هذا التميز من البداية كان علامة فارقة.
+
+
+
+
+
+الخبير 1: وهذا يقودنا إلى سؤال هام: بم اتسمت شخصية (إبراهيم الرفاعي)؟ النص يصف لنا شخصية فريدة. فقد عُرِف الرفاعي بشجاعته الفائقة وإقدامه النادر، وكان دائماً في الصفوف الأولى للمعارك، يقود رجاله بنفسه، ويضرب المثل في التضحية والإخلاص، كانت كفاءته وجرأته تبهر رجاله قبل أن تبهر العدو نفسه.
+
+
+
+
+
+الخبير 2: وهذا يوضح لنا قيمة إنسانيته وتواضعه كقائد، لأنه كما يقول النص: ولأن روح الجنود من روح قائدهم؛ فقد أحب الرفاعي رجاله ووثق بهم ووضع نفسه في خدمتهم، وتكفل بأسر من استشهد منهم، وكان ينخرط معهم في كل مناسباتهم السعيدة أو العصيبة، وكان دائماً يقول: "إن من يواجهون الموت معاً يجب أن يعيشوا حياتهم معاً." وهي عبارة تظهر قوة الرابطة الإنسانية الناتجة عن المواقف المصيرية المشتركة.
+
+
+
+
+
+الخبير 1: عبارة عميقة ودالة حقاً. هذا القائد العظيم لم تقتصر بطولاته على التوجيه. فقد شارك في حرب 1956م؛ حيث قام بأكبر عملية شهدتها بور سعيد، عملية تدمير مجموعة من الدبابات الإنجليزية بوسط المدينة.
+
+
+
+
+
+الخبير 2: وبعد ذلك، برز اسمه في حرب الاستنزاف: حيث أسس مجموعة العمليات الخاصة التي اشتهرت فيما بعد باسم (المجموعة 39 قتال)، وهي مجموعة نفذت عشرات العمليات النوعية خلف خطوط العدو، جعلتهم يطلقون على رجال المجموعة لقب (الأشباح)؛ نظراً لقدرتهم على التخفي، والدخول وتنفيذ العمليات، بل والعودة دون أن يرصدوا.
+
+
+
+
+
+الخبير 1: وهذا اللقب "الأشباح" يعكس فعالية هذه المجموعة. النص يوضح أن: كانت تلك العمليات تثير الرعب في قلوب الإسرائيليين؛ إذ دمرت مواقعهم، وأوقعت خسائر جسيمة في صفوفهم. وهذا يدل على قوة العمليات العسكرية المصرية، وشدة تأثيرها في نفوس العدو.
+
+
+
+
+
+الخبير 2: نعم، فالرفاعي ورجاله قاموا بقصف مدينة بيسان الإسرائيلية، ونسف مخازن للذخيرة - في الشيخ زويد - فضلاً عن نسف قطار حربي يحمل ضباطاً وجنوداً إسرائيليين في الشيخ زويد أيضاً، أكدت تلك العمليات أن المصريين لا يلينون أمام التحديات. وهذا يمثل الإصرار والعزيمة وقوة الإرادة.
+
+
+
+
+
+الخبير 1: بالفعل، المصريون لا يلينون. ومع انطلاق الضربة الجوية الأولى في حرب أكتوبر، وكما يصف النص بـ الصفحة 3: ومع صيحات "الله أكبر" يوم السادس من أكتوبر انطلق البطل ورجاله في ثلاث طائرات هليكوبتر لتدمير آبار البترول في منطقة (بلاعيم) شرق القناة؛ لحرمان العدو من مصدر الوقود لدباباته ومركباته، ونجح الرجال في إنجاز المهمة. وهذا كان ضربة موجعة للعدو.
+
+
+
+
+
+الخبير 2: ولم يتوقف الأمر عند هذا الحد. ففي السابع من أكتوبر نجحت المجموعة أيضاً في الإغارة على مطار (الطور) وتدمير الطائرات الرابضة به، وتدمير ممر الطائرات؛ كي يخرج المطار من الخدمة؛ وهو ما أصاب القيادة الإسرائيلية بالارتباك والذهول من سرعة الضربات المتتالية لرجال الصاعقة المصرية البواسل ودقتها.
+
+
+
+
+
+الخبير 1: هذه العمليات المتتالية كانت ترفع الروح المعنوية لقواتنا. وكما جاء في النص: وجاء يوم 18 أكتوبر حين كُلف البطل بمهمة اختراق مواقع العدو غرب القناة والوصول إلى منطقة (نفيشة)، بل وتدمير قوات العدو ومدرعاته ومنعها من التقدم في اتجاه الإسماعيلية.
+
+
+
+
+
+الخبير 2: وكالعادة، لم يأت فجر يوم 19 أكتوبر حتى تمت المهمة بنجاح منقطع النظير. أي بلا مثيل له.
+
+
+
+
+
+الخبير 1: وهنا نصل إلى ذروة تضحياته. فكيف استشهد البطل (إبراهيم الرفاعي)؟
+
+
+
+
+
+الخبير 2: في يوم الجمعة 23 رمضان الموافق 19 أكتوبر 1973م، بينما كانت رجاله يخوضون قتالاً ضارياً مع مدرعات العدو لمنعها من التوغل في بلادنا غرب القناة، وبينما تتعالى أصوات الأذان من مسجد قرية (المحسمة) في الإسماعيلية، إذ تسقط إحدى دانات مدفعية العدو قرب موقع البطل، فتصيبه إحدى شظاياها المتناثرة، ويسقط الرجل الأسطوري جريحاً، فيسرع إليه رجاله في محاولة لإنقاذه، ولكنه يطلب منهم الاستمرار في معركتهم ومعركة الوطن، ويلفظ البطل أنفاسه صائماً، وينضم إلى طابور الشهداء.
+
+
+
+
+
+الخبير 1: لحظات خالدة في تاريخ هذا الوطن. هكذا يا بنيّ ... يُذكرنا استشهاد إبراهيم الرفاعي أن الحفاظ على الهوية المصرية إرث عظيم، يتوارثه الأبناء عن الآباء جيلاً بعد جيل.
+
+
+
+
+
+الخبير 2: وهي رسالة لكل الأجيال. فالنص يدعونا: فلتجعل يا بنيّ من سيرة هذا البطل نبراساً لحياتك، ولتتعلم أن المصري الأصيل لا يفرط في وطنه، ولا يتخلى عن هويته، بل يحيا شجاعاً ويموت عزيزاً.
+
+
+
+
+
+الخبير 1: وهذا يذكرنا بالقيم والمبادئ التي نتعلمها من سيرته، مثل الإيثار والفداء الذي تجسد في قيادته لرجاله بنفسه وضرب المثل في التضحية، والإيمان بدور العلم الذي ظهر في حصوله على ماجستير العلوم العسكرية، والإنسانية والتواضع في حبه لرجاله ووضع نفسه في خدمتهم، والوفاء والعطاء في تكفله بأسر الشهداء ومشاركته لهم، وحب الوطن والتضحية في طلبه من رجاله الاستمرار في المعركة، وأخيراً الوطنية والاعتزاز بالهوية التي تظهر في أن المصري الأصيل لا يفرط في وطنه.
+
+
+
+
+
+الخبير 2: كلمات تختصر سيرة بطل عظيم. رحم الله البطل الشهيد إبراهيم الرفاعي. إنها فعلاً التضحية من أجل الوطن شرف لا يناله إلا أصحاب القلوب المؤمنة بقيم الانتماء والوفاء، فالوطن ليس مجرد أرض نعيش عليها، بل روح تسكن فينا. إن الفداء من أجل الوطن هو أعلى درجات العطاء، وهو الطريق الذي يخلد أسماء الشجعان في ذاكرة الأمة.
+
+
+
+
+
+الخبير 1: وما أحوجنا اليوم لمثل هذه النماذج والقيم. شكراً جزيلاً لك زميلي الخبير على هذا النقاش الثري والمفيد.
+
+
+
+
+
+الخبير 2: الشكر لك وللمستمعين الكرام.
+
+
+
+
+
+الخبير 1: وإلى هنا نكون قد وصلنا إلى ختام حلقتنا لهذا اليوم من بودكاست "دروب العزة". نأمل أن تكونوا قد استفدتم واستمتعتم. إلى اللقاء في حلقة قادمة.
+    </div>
+    ''', unsafe_allow_html=True)
+with t4:
+    st.subheader("🧠 Student Assessment")
+    
+
+    mcqs = [
+        ("متى وُلد البطل إبراهيم الرفاعي؟", ["1931م", "1954م", "1973م"], "1931م"),
+        ("إلى أي محافظة ترجع جذور أسرته؟", ["القاهرة", "الدقهلية", "الإسماعيلية"], "الدقهلية"),
+        ("تخرج في الكلية الحربية عام:", ["1954م", "1959م", "1931م"], "1954م"),
+        ("التحق إبراهيم الرفاعي بسلاح:", ["المشاة", "المظلات", "الصاعقة"], "المشاة"),
+        ("حصل على ماجستير العلوم العسكرية عام:", ["1959م", "1954م", "1967م"], "1959م"),
+        ("ترتيبه في فرقتي الصاعقة والمظلات كان:", ["الأول", "الثاني", "الأخير"], "الأول"),
+        ("العملية الكبرى في بورسعيد كانت تدمير:", ["دبابات إنجليزية", "طائرات", "سفن"], "دبابات إنجليزية"),
+        ("لقب رجال المجموعة 39 قتال بـ:", ["الأشباح", "النمور", "الأبطال"], "الأشباح"),
+        ("نجحت المجموعة في تدمير آبار البترول في:", ["بلاعيم", "الطور", "الإسماعيلية"], "بلاعيم"),
+        ("استشهد البطل في يوم الجمعة 23 رمضان وهو:", ["صائم", "نائم", "مُتعب"], "صائم")
+    ]
+    
+    user_answers = []
+    for i, (q, opts, ans) in enumerate(mcqs):
+        st.markdown(f"**Q{i+1}: {q}**")
+        user_answers.append(st.radio(f"Select answer for {i}", opts, index=None, key=f"mcq_{i}", label_visibility="collapsed"))
+
+    st.divider()
+
+    st.subheader("✍️ Essay Questions")
+    essays = [
+        "كيف كانت نشأة إبراهيم الرفاعي؟",
+        "اكتب ما تعرفه عن مشواره التعليمي والمهني.",
+        "بم اتسمت شخصية إبراهيم الرفاعي؟",
+        "لماذا لقب رجال مجموعته بالأشباح؟",
+        "ما الخسائر التي ألحقها بالعدو في حرب أكتوبر؟",
+        "كيف استشهد البطل إبراهيم الرفاعي؟"
+    ]
+    
+    essay_ans = []
+    for i, eq in enumerate(essays):
+        st.markdown(f"**{eq}**")
+        essay_ans.append(st.text_area("Write your answer:", key=f"essay_{i}"))
+
+    if st.button("Submit Full Exam & Grade with AI"):
+        # 1. تصحيح الاختياري (تلقائي)
+        mcq_score = sum(1 for i, ans in enumerate(user_answers) if ans == mcqs[i][2])
+        st.success(f"✅ MCQ Score: {mcq_score} / 10")
+
+     
+        ESSAY_MODEL_ANSWERS = {
+            "كيف كانت نشأة إبراهيم الرفاعي؟": "ولد عام 1931م في حي العباسية بالقاهرة، وتعود جذور أسرته لقرية الخلالة بالدقهلية.",
+            "اكتب ما تعرفه عن مشواره التعليمي والمهني.": "تخرج في الكلية الحربية 1954، التحق بسلاح المشاة، حصل على ماجستير العلوم العسكرية 1959، وكان الأول على الصاعقة والمظلات.",
+            "بم اتسمت شخصية إبراهيم الرفاعي؟": "الشجاعة، الإقدام، التضحية، الإخلاص، التواضع، والقيادة بالقدوة.",
+            "لماذا لقب رجال مجموعته بالأشباح؟": "لقدرتهم الفائقة على التخفي، وتنفيذ العمليات خلف خطوط العدو والعودة دون رصد.",
+            "ما الخسائر التي ألحقها بالعدو في حرب أكتوبر؟": "تدمير آبار بترول بلاعيم، تدمير مطار الطور، ومنع تقدم العدو في الإسماعيلية.",
+            "كيف استشهد البطل إبراهيم الرفاعي؟": "استشهد يوم الجمعة 23 رمضان إثر إصابته بشظية مدفعية في الإسماعيلية ومات صائماً."
+        }
+
+        st.divider()
+        st.subheader("📝 AI Teacher's Evaluation (Friendly):")
+        
+        with st.spinner("AI is checking your answers..."):
+            for i, u_ans in enumerate(essay_ans):
+                if u_ans.strip():
+                    q_text = essays[i]
+                    model_a = ESSAY_MODEL_ANSWERS.get(q_text, "")
                     
-                    res = model.generate_content(prompt)
-                    raw = res.text.replace('```json', '').replace('```', '').strip()
-                    st.session_state.full_assessment = json.loads(raw)
-                except:
-                    st.warning("⚠️ Generation Error.")
-
-        if 'full_assessment' in st.session_state:
-            st.markdown("### 📝 Part 1: Multiple Choice (10 Qs)")
-            for i, q in enumerate(st.session_state.full_assessment['mcqs']):
-                dir = get_direction(q['question'])
-                st.markdown(f"<div class='explanation-card' style='direction: {dir}; text-align: {'right' if dir=='rtl' else 'left'};'>", unsafe_allow_html=True)
-                st.markdown(f"**Q{i+1}: {q['question']}**")
-                choice = st.radio("Select Option:", q['options'], key=f"mcq_{i}_{st.session_state.qid}", index=None)
-                if st.button(f"Verify Q{i+1}", key=f"v_mcq_{i}"):
-                    if choice == q['answer']: st.success("Correct")
-                    else: st.error(f"Answer: {q['answer']}")
-                st.markdown("</div>", unsafe_allow_html=True)
-
-            st.markdown("### ✍️ Part 2: AI Essay Grader (10 Qs)")
-            for i, q in enumerate(st.session_state.full_assessment['essays']):
-                dir = get_direction(q['question'])
-                st.markdown(f"<div class='explanation-card' style='direction: {dir}; text-align: {'right' if dir=='rtl' else 'left'};'>", unsafe_allow_html=True)
-                st.markdown(f"**Q{i+11}: {q['question']}**")
-                user_ans = st.text_area("Write your answer here:", key=f"ans_{i}_{st.session_state.qid}")
-                if st.button(f"Grade Essay {i+11}", key=f"grade_{i}"):
-                    with st.spinner("AI is grading..."):
-                        grader_res = model.generate_content(f"Grade this student answer based on the model answer. Give a score out of 10 and constructive feedback. Language: Same as input. \nModel Answer: {q['model_answer']}\nStudent Answer: {user_ans}")
-                        st.info(grader_res.text)
-                st.markdown("</div>", unsafe_allow_html=True)
-
-    with t5:
-        st.markdown("<br>", unsafe_allow_html=True)
-        st.subheader("🤖 Ask anything about the PDF")
-        user_query = st.text_input("Enter your question:")
-        if st.button("Send Question"):
-            if user_query:
-                with st.spinner("Thinking..."):
+                    grading_prompt = f"""
+                    أنت الآن معلم لغة عربية ودود، تصحح إجابات الطلاب عن البطل إبراهيم الرفاعي.
+                    قاعدتك هي: (المعنى أهم من النص الحرفي).
+                    - إذا كتب الطالب الإجابة بلهجة عامية، باختصار، أو "بالبلدي" ولكنها تعطي نفس المعنى الصحيح، أعطه 10/10 فوراً.
+                    - لا تحاسبه على فصاحة اللغة أو الإملاء.
+                    - إذا كانت الإجابة ناقصة معلومة أساسية جداً، أعطه درجة تقديرية.
+                    
+                    السؤال: {q_text}
+                    الإجابة الصحيحة للمرجع: {model_a}
+                    إجابة الطالب المكتوبة: {u_ans}
+                    
+                    رد كالتالي: (سؤال {i+1}: الدرجة: X/10 - تعليق تشجيعي قصير جداً)
+                    """
                     try:
-                        res = model.generate_content(f"Act as a personal tutor. Answer the user's question based strictly on the provided context. you can explain with any language: \n\n Context: {text[:10000]} \n\n Question: {user_query}")
-                        dir = get_direction(res.text)
-                        st.markdown(f'<div class="explanation-card" style="direction: {dir}; text-align: {"right" if dir=="rtl" else "left"}; background: white;">{res.text}</div>', unsafe_allow_html=True)
-                        lang = 'ar' if dir == 'rtl' else 'en'
-                        st.markdown(text_to_speech_html(res.text, lang=lang), unsafe_allow_html=True)
+                        response = model.generate_content(grading_prompt)
+                        st.info(response.text)
                     except:
-                        st.error("Connection error.")
+                        st.error(f"Error grading Q{i+1}")
+                else:
+                    st.warning(f"سؤال {i+1}: لم يتم كتابة إجابة.")
 
-    with t6:
-        st.markdown("<br>", unsafe_allow_html=True)
-        st.header("🎥 AI Video Tutor")
-        video_topic = st.text_input("Topic for video explanation (Optional):")
-        if st.button("Generate Video Lesson"):
-            with st.spinner("Creating AI Video Content..."):
+with t5:
+    st.subheader("💬 Chat with your Personal Tutor")
+    u_input = st.text_input("Ask anything about the lesson:")
+    if st.button("Send to AI"):
+        if u_input:
+            with st.spinner("AI is thinking..."):
                 try:
-                    # منطق توليد سكريبت الفيديو والشرح المرئي
-                    vid_script = model.generate_content(f"Create a structured educational video lesson script about {video_topic if video_topic else 'the document content'}. Focus on visual cues and simple explanation. Context: {text[:5000]}")
-                    dir = get_direction(vid_script.text)
-                    
-                    st.video("https://www.w3schools.com/html/mov_bbb.mp4") # رابط فيديو افتراضي للتوضيح
-                    st.markdown(f'<div class="explanation-card" style="direction: {dir}; text-align: {"right" if dir=="rtl" else "left"};">{vid_script.text}</div>', unsafe_allow_html=True)
-                except:
-                    st.error("Error generating video lesson.")
+                    chat_prompt = f"Answer this student's question about Ibrahim Al-Rifa'i briefly and clearly in Arabic: {u_input}. Use this lesson info: {LESSON_SUMMARY}"
+                    resp = model.generate_content(chat_prompt)
+                    st.markdown(f'<div class="explanation-card rtl-text">{resp.text}</div>', unsafe_allow_html=True)
+                except Exception as e:
+                    st.error(f"Error: {str(e)}")
